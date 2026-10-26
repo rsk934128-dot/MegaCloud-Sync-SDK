@@ -97,6 +97,7 @@ class MainActivity : ComponentActivity() {
                 isOledBlack = isOledMode
             ) {
                 val currentUser by viewModel.currentUser.collectAsState()
+                val isDemoMode by viewModel.isDemoMode.collectAsState()
                 val context = androidx.compose.ui.platform.LocalContext.current
                 val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
 
@@ -128,12 +129,15 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if (currentUser == null) {
+                if (currentUser == null && !isDemoMode) {
                     com.example.ui.screens.AuthScreen(
                         onAuthSuccess = {
                             com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.let { user ->
                                 viewModel.onUserSignedIn(user)
                             }
+                        },
+                        onDemoMode = {
+                            viewModel.enterDemoMode()
                         }
                     )
                 } else {

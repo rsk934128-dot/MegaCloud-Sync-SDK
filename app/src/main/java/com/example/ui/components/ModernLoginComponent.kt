@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -39,8 +41,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +66,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,20 +77,22 @@ import com.example.ui.theme.CyanPrimary
 import com.example.ui.theme.MegaRed
 import com.example.ui.theme.SecurityAmber
 import com.example.ui.theme.SecurityGreen
+import kotlinx.coroutines.launch
 
 /**
  * Modern, self-contained Login UI Component featuring:
  * - Cyber-cloud brand identity with glowing badge & status indicators
  * - Google Identity & Firebase Auth interactive sign-in
- * - High-contrast official Material 3 Google Sign-In button with 4-color "G" emblem
+ * - Email & Password authentication fallback
+ * - Instant Demo Operator Mode for quick testing in emulator
  * - Real-time progress feedback, cancellation handling & error alerts
- * - Security pillars & zero-trust reassurance
  */
 @Composable
 fun ModernLoginComponent(
     onAuthSuccess: () -> Unit,
     modifier: Modifier = Modifier,
-    onAuthError: ((String) -> Unit)? = null
+    onAuthError: ((String) -> Unit)? = null,
+    onDemoMode: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -91,6 +100,10 @@ fun ModernLoginComponent(
 
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showEmailLogin by remember { mutableStateOf(false) }
+    var emailInput by remember { mutableStateOf("") }
+    var passwordInput by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     Card(
         shape = RoundedCornerShape(24.dp),
@@ -332,7 +345,119 @@ fun ModernLoginComponent(
                     .testTag("google_sign_in_button")
             )
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Demo Operator / Instant Test Mode Direct Entry Button
+            OutlinedButton(
+                onClick = onDemoMode,
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, CyanPrimary.copy(alpha = 0.5f)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .testTag("demo_mode_button")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Security,
+                    contentDescription = null,
+                    tint = SecurityAmber,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Continue as Demo Operator (Instant Access)",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Email Login Accordion
+            if (!showEmailLogin) {
+                TextButton(
+                    onClick = { showEmailLogin = true },
+                    modifier = Modifier.fillMaxWidth().testTag("toggle_email_login_btn")
+                ) {
+                    Text(
+                        text = "Or Sign in / Register with Email & Password",
+                        color = CyanPrimary,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Email Authentication",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    OutlinedTextField(
+                        value = emailInput,
+                        onValueChange = { emailInput = it },
+                        label = { Text("Email Address", fontSize = 11.sp) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().testTag("email_input")
+                    )
+
+                    OutlinedTextField(
+                        value = passwordInput,
+                        onValueChange = { passwordInput = it },
+                        label = { Text("Password (min 6 chars)", fontSize = 11.sp) },
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = "Toggle password",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().testTag("password_input")
+                    )
+
+                    Button(
+                        onClick = {
+                            if (emailInput.isNotBlank() && passwordInput.length >= 6) {
+                                isLoading = true
+                                errorMessage = null
+                                coroutineScope.launch {
+                                    val res = AuthManager.signInWithEmail(emailInput.trim(), passwordInput.trim())
+                                    isLoading = false
+                                    res.onSuccess {
+                                        onAuthSuccess()
+                                    }.onFailure { ex ->
+                                        errorMessage = ex.localizedMessage ?: "Email authentication failed"
+                                    }
+                                }
+                            } else {
+                                errorMessage = "Please enter a valid email and 6+ character password."
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = CyanPrimary),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().height(44.dp).testTag("email_sign_in_submit_btn")
+                    ) {
+                        Text("Sign In / Register with Email", color = Color(0xFF00202E), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Security Compliance & Privacy Footer
             Row(

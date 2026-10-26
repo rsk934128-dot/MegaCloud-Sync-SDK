@@ -47,6 +47,12 @@ class AppPulseViewModel(application: Application) : AndroidViewModel(application
     val currentUser = MutableStateFlow<com.google.firebase.auth.FirebaseUser?>(
         com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
     )
+    val isDemoMode = MutableStateFlow(false)
+
+    fun enterDemoMode() {
+        isDemoMode.value = true
+        showSnackbar("Entered AppPulse as Demo Operator (Test Mode active).")
+    }
 
     // Theme & Personalization State
     val selectedAccentOption = MutableStateFlow(com.example.ui.theme.AccentColorOption.CYAN)
@@ -260,7 +266,8 @@ class AppPulseViewModel(application: Application) : AndroidViewModel(application
             credentialManager = credentialManager,
             onSignOutComplete = {
                 currentUser.value = null
-                showSnackbar("Signed out of Google account.")
+                isDemoMode.value = false
+                showSnackbar("Signed out of account.")
             },
             scope = viewModelScope
         )

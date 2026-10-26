@@ -48,7 +48,8 @@ import com.example.ui.theme.SecurityGreen
 @Composable
 fun AuthScreen(
     onAuthSuccess: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDemoMode: () -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
 
@@ -127,6 +128,7 @@ fun AuthScreen(
             ) {
                 ModernLoginComponent(
                     onAuthSuccess = onAuthSuccess,
+                    onDemoMode = onDemoMode,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
