@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">AppPulse</string>
+    <string name="default_web_client_id" translatable="false">869767926548-lg0vrh8s054osjkr4bmvfvr5rjgra981.apps.googleusercontent.com</string>
 </resources>
