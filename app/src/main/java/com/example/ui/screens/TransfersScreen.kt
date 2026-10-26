@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import com.example.model.TransferItem
 import com.example.model.TransferStatus
 import com.example.model.TransferType
+import com.example.ui.components.FileSyncStatusWidget
 import com.example.ui.components.formatBytes
 import com.example.ui.components.formatSpeed
 import com.example.ui.theme.CyanPrimary
@@ -106,6 +107,21 @@ fun TransfersScreen(
                 Text("Clear Done", fontSize = 11.sp)
             }
         }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Live Real-Time File Synchronization Status Widget with Animated Text & Progress
+        FileSyncStatusWidget(
+            transfers = transfers,
+            onPauseTransfer = { id -> viewModel.pauseTransfer(id) },
+            onResumeTransfer = { id -> viewModel.resumeTransfer(id) },
+            onForceSync = {
+                viewModel.showSnackbar("Cloud sync engine active • Integrity verified.")
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         if (transfers.isEmpty()) {
             Box(

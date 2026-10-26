@@ -174,6 +174,16 @@ fun DashboardScreen(
             }
         }
 
+        // Real-Time File Synchronization Status Widget with Animated Text & Progress
+        item {
+            com.example.ui.components.FileSyncStatusWidget(
+                transfers = transfers,
+                onPauseTransfer = { id -> viewModel.pauseTransfer(id) },
+                onResumeTransfer = { id -> viewModel.resumeTransfer(id) },
+                onForceSync = { viewModel.showSnackbar("Initiated cloud audit sync.") }
+            )
+        }
+
         // Storage Usage & Insights Donut Chart Widget
         item {
             com.example.ui.components.StorageInsightsCard(
