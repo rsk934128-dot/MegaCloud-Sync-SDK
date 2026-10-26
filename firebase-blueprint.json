@@ -1,0 +1,57 @@
+{
+  "$schema": "https://firebase.google.com/schemas/firestore/blueprint/v1.json",
+  "entities": {
+    "UserProfile": {
+      "collection": "users",
+      "path": "/users/{userId}",
+      "description": "Authenticated user profile and sync status",
+      "fields": {
+        "userId": { "type": "string", "required": true },
+        "email": { "type": "string", "required": true },
+        "displayName": { "type": "string", "required": false },
+        "createdAt": { "type": "timestamp", "required": false },
+        "updatedAt": { "type": "timestamp", "required": false }
+      }
+    },
+    "ThreatAuditReportEntity": {
+      "collection": "auditReports",
+      "path": "/users/{userId}/auditReports/{reportId}",
+      "description": "Audited security reports synced to cloud",
+      "fields": {
+        "id": { "type": "string", "required": false },
+        "userId": { "type": "string", "required": true },
+        "reportId": { "type": "string", "required": true },
+        "scanDateEpochMs": { "type": "number", "required": true },
+        "totalAppsScanned": { "type": "number", "required": true },
+        "safeCount": { "type": "number", "required": true },
+        "lowRiskCount": { "type": "number", "required": true },
+        "mediumRiskCount": { "type": "number", "required": true },
+        "criticalRiskCount": { "type": "number", "required": true },
+        "overallThreatScore": { "type": "number", "required": true },
+        "keyFindings": { "type": "list", "required": true },
+        "isSyncedToCloud": { "type": "boolean", "required": true },
+        "cloudSyncUrl": { "type": "string", "required": false },
+        "createdAt": { "type": "timestamp", "required": false },
+        "updatedAt": { "type": "timestamp", "required": false }
+      }
+    },
+    "BackedUpApkEntity": {
+      "collection": "backedUpApks",
+      "path": "/users/{userId}/backedUpApks/{apkId}",
+      "description": "Metadata for APK packages backed up to cloud vault",
+      "fields": {
+        "id": { "type": "string", "required": false },
+        "userId": { "type": "string", "required": true },
+        "packageName": { "type": "string", "required": true },
+        "appName": { "type": "string", "required": true },
+        "versionName": { "type": "string", "required": true },
+        "apkSizeBytes": { "type": "number", "required": true },
+        "threatScore": { "type": "number", "required": true },
+        "threatLevel": { "type": "string", "required": true },
+        "cloudStorageUrl": { "type": "string", "required": false },
+        "createdAt": { "type": "timestamp", "required": false },
+        "updatedAt": { "type": "timestamp", "required": false }
+      }
+    }
+  }
+}

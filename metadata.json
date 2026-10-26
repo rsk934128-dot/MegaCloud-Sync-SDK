@@ -1,0 +1,6 @@
+{
+  "name": "AppPulse",
+  "description": "Smart cloud storage & security sync manager featuring MEGA Cloud integration, APK backup, and threat audit reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

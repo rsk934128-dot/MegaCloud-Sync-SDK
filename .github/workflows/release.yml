@@ -1,0 +1,126 @@
+name: Build & Release Android APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Publish a GitHub Release'
+        required: true
+        type: boolean
+        default: true
+      release_tag:
+        description: 'Release Tag (e.g. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+      release_notes:
+        description: 'Release Notes'
+        required: false
+        default: 'AppPulse Android APK release with Cloud Storage & Security Vault.'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore Keystore & Environment
+        run: |
+          if [ -f "debug.keystore.base64" ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+            echo "Restored debug.keystore from base64."
+          fi
+          if [ -f ".env.example" ] && [ ! -f ".env" ]; then
+            cp .env.example .env
+          elif [ ! -f ".env" ]; then
+            touch .env
+          fi
+          chmod +x gradlew
+
+      - name: Build Android APK
+        run: |
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Prepare APK Artifacts
+        run: |
+          mkdir -p release-output
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            echo "Error: APK not found!"
+            exit 1
+          fi
+          echo "Found APK at: $APK_PATH"
+          cp "$APK_PATH" release-output/AppPulse-v1.0.apk
+          cp "$APK_PATH" release-output/app-debug.apk
+
+      - name: Upload APK Artifact (Direct Download)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppPulse-Android-APK
+          path: release-output/AppPulse-v1.0.apk
+          retention-days: 30
+
+      - name: Determine Release Tag
+        id: release_info
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TAG_NAME="${{ github.event.inputs.release_tag }}"
+            CREATE_REL="${{ github.event.inputs.create_release }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            CREATE_REL="true"
+          else
+            TAG_NAME="nightly"
+            CREATE_REL="false"
+          fi
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "create_rel=$CREATE_REL" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        if: steps.release_info.outputs.create_rel == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_info.outputs.tag_name }}
+          name: AppPulse Release ${{ steps.release_info.outputs.tag_name }}
+          body: |
+            ## 📱 AppPulse Android Release (${{ steps.release_info.outputs.tag_name }})
+            
+            Welcome to the official release of **AppPulse**!
+            
+            ### 🚀 Features Included:
+            - **Google Sign-In & Authentication:** Secure Firebase Auth integration.
+            - **Hybrid Cloud Storage & Vault:** SAF File Picker, offline caching & sync.
+            - **Transparent Audio Memo Vault:** Record, store, and listen to voice memos.
+            - **APK Security Scanner & Threat Audit:** Real-time package inspection & cloud backup.
+            - **OLED Pure Black & Cyber Theme:** Modern Material Design 3 interface.
+            
+            ### 📥 Download & Install:
+            - Download `AppPulse-v1.0.apk` below.
+            - Open the downloaded `.apk` file on your Android device to install.
+          files: |
+            release-output/AppPulse-v1.0.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

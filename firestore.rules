@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.userId == userId &&
+        data.email is string &&
+        data.email.size() > 3;
+    }
+
+    function isValidAuditReport(data, userId) {
+      return data.userId == userId &&
+        data.reportId is string &&
+        data.reportId.size() > 0 &&
+        data.totalAppsScanned is number &&
+        data.overallThreatScore is number &&
+        data.keyFindings is list &&
+        data.isSyncedToCloud is bool;
+    }
+
+    function isValidBackedUpApk(data, userId) {
+      return data.userId == userId &&
+        data.packageName is string &&
+        data.packageName.size() > 0 &&
+        data.appName is string &&
+        data.apkSizeBytes is number &&
+        data.threatScore is number &&
+        data.threatLevel is string;
+    }
+
+    // User Profile
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data, userId);
+      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data, userId);
+      allow delete: if isOwner(userId);
+
+      // Audit Reports Subcollection
+      match /auditReports/{reportId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidAuditReport(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidAuditReport(request.resource.data, userId);
+        allow delete: if isOwner(userId);
+      }
+
+      // Backed-up APKs Subcollection
+      match /backedUpApks/{apkId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidBackedUpApk(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidBackedUpApk(request.resource.data, userId);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}
